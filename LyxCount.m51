@@ -1,0 +1,99 @@
+BL51 BANKED LINKER/LOCATER V5.03                                                        04/15/2017  20:41:12  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V5.03, INVOKED BY:
+C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\BIN\BL51.EXE ..\Output\Main.obj TO ..\Output\LyxCount PRINT (.\LyxCount.m51) RAMSIZ
+>> E (256)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  ..\Output\Main.obj (MAIN)
+  C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\LIB\C51S.LIB (?C_STARTUP)
+  C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\LIB\C51S.LIB (?C_INIT)
+
+
+LINK MAP OF MODULE:  ..\Output\LyxCount (MAIN)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            DATA    0008H     0010H     UNIT         ?DT?MAIN
+                    0018H     0008H                  *** GAP ***
+            BIT     0020H.0   0000H.4   UNIT         ?BI?MAIN
+            BIT     0020H.4   0000H.3   UNIT         _BIT_GROUP_
+                    0020H.7   0000H.1                *** GAP ***
+            IDATA   0021H     0001H     UNIT         ?STACK
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+            CODE    0003H     0008H     INBLOCK      ?PR?DELAY1MS?MAIN
+            CODE    000BH     0003H     ABSOLUTE     
+            CODE    000EH     0154H     INBLOCK      ?PR?ONTIMER?MAIN
+            CODE    0162H     00E9H     INBLOCK      ?PR?MAIN?MAIN
+            CODE    024BH     008CH     UNIT         ?C_C51STARTUP
+            CODE    02D7H     004DH     INBLOCK      ?PR?MAIN
+            CODE    0324H     002FH     INBLOCK      ?PR?INITTIMER?MAIN
+            CODE    0353H     0016H     UNIT         ?CO?MAIN
+            CODE    0369H     0011H     INBLOCK      ?PR?_DISPLAYDECNUM?MAIN
+            CODE    037AH     000EH     INBLOCK      ?PR?_DISPLAYDECNUMH?MAIN
+            CODE    0388H     000EH     INBLOCK      ?PR?DELAY100MS?MAIN
+            CODE    0396H     000DH     UNIT         ?C_INITSEG
+            CODE    03A3H     0004H     INBLOCK      ?PR?_DISPLAYDECNUML?MAIN
+
+
+
+OVERLAY MAP OF MODULE:   ..\Output\LyxCount (MAIN)
+
+
+SEGMENT                             BIT_GROUP 
+  +--> CALLED SEGMENT            START    LENGTH
+------------------------------------------------
+?PR?ONTIMER?MAIN                 -----    -----
+  +--> ?PR?MAIN
+  +--> ?PR?_DISPLAYDECNUML?MAIN
+  +--> ?PR?_DISPLAYDECNUM?MAIN
+
+BL51 BANKED LINKER/LOCATER V5.03                                                      04/15/2017  20:41:12  PAGE 2
+
+
+?PR?MAIN                         -----    -----
+  +--> ?PR?_DISPLAYDECNUM?MAIN
+  +--> ?CO?MAIN
+
+?PR?_DISPLAYDECNUM?MAIN          -----    -----
+  +--> ?CO?MAIN
+
+?PR?_DISPLAYDECNUML?MAIN         -----    -----
+  +--> ?PR?MAIN
+
+*** NEW ROOT ***************************************************
+
+?C_C51STARTUP                    -----    -----
+  +--> ?PR?MAIN?MAIN
+  +--> ?C_INITSEG
+
+?PR?MAIN?MAIN                    0020H.4  0000H.3
+  +--> ?PR?INITTIMER?MAIN
+  +--> ?PR?MAIN
+  +--> ?PR?_DISPLAYDECNUMH?MAIN
+  +--> ?PR?_DISPLAYDECNUML?MAIN
+  +--> ?PR?DELAY100MS?MAIN
+
+?PR?INITTIMER?MAIN               -----    -----
+  +--> ?PR?MAIN
+
+?PR?_DISPLAYDECNUMH?MAIN         -----    -----
+  +--> ?CO?MAIN
+  +--> ?PR?MAIN
+
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?DELAY1MS?MAIN
+
+Program Size: data=25.7 xdata=0 code=935
+LINK/LOCATE RUN COMPLETE.  1 WARNING(S),  0 ERROR(S)

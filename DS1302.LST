@@ -1,0 +1,331 @@
+C51 COMPILER V7.10   DS1302                                                                03/25/2017 09:16:01 PAGE 1   
+
+
+C51 COMPILER V7.10, COMPILATION OF MODULE DS1302
+OBJECT MODULE PLACED IN ..\Output\DS1302.obj
+COMPILER INVOKED BY: C:\Users\lyxso\System\Tools\Keil\C51\BIN\C51.EXE DS1302.c ROM(COMPACT) OPTIMIZE(9,SPEED) INCDIR(C:\
+                    -Users\lyxso\System\Tools\Keil\C51\INC\) OBJECT(..\Output\DS1302.obj)
+
+line level    source
+
+   1          /*
+   2                  (*) DS1302 Supporting Functions
+   3          
+   4          
+   5          */
+   6          
+   7          #include "STC\STC15F104E.H"
+   8          #include "DS1302.h"
+   9          
+  10          sbit io_DS1302_RST = P0^0 ; 
+  11          
+  12          sbit io_DS1302_IO = P0^1 ; 
+  13          
+  14          sbit io_DS1302_SCLK = P3^2 ; 
+  15          
+  16          
+  17          static bit bGate = 0;
+  18          
+  19          
+  20          /****************************************************************************** 
+  21          
+  22          * Function: static void DS1302Write( uint8 Content ) * 
+  23          
+  24          * Description: Write one BYTE
+  25          
+  26          * Parameter:uint8 Content : Wite Value
+  27          
+  28          * * 
+  29          
+  30          ******************************************************************************/ 
+  31          static void DS1302Write (uint8 nData) 
+  32          {
+  33   1              uint8 nMask;
+  34   1      
+  35   1              for (nMask = 1; nMask; nMask <<= 1)
+  36   1              {
+  37   2                      DS1302_IO = nData & nMask;
+  38   2      
+  39   2                      DS1302_SCLK_HIGH                //Start for next bit 
+  40   2                      DS1302_SCLK_LOW 
+  41   2              }
+  42   1              DS1302_IO_HIGH  // Release I/O
+  43   1      } 
+  44          
+  45          /****************************************************************************** 
+  46          
+  47          * Function: static uint8 DS1302Read( void ) * 
+  48          
+  49          * Description: Read one BYTE 
+  50          
+  51          * Parameter: * 
+  52          
+  53          * Return: Value Read 
+  54          
+C51 COMPILER V7.10   DS1302                                                                03/25/2017 09:16:01 PAGE 2   
+
+  55          ******************************************************************************/ 
+  56          
+  57          static uint8 DS1302Read (void) 
+  58          
+  59          {
+  60   1              uint8 nMask, nReadValue = 0;
+  61   1      
+  62   1              for (nMask = 1; nMask; nMask <<= 1)
+  63   1              {
+  64   2                      if (DS1302_IO)          //Data is ready at the end of command bytes
+  65   2                              nReadValue |= nMask;
+  66   2      
+  67   2                      DS1302_SCLK_HIGH                        //Start for next bit
+  68   2                      DS1302_SCLK_LOW 
+  69   2              }
+  70   1      
+  71   1              return nReadValue ; 
+  72   1      } 
+  73          
+  74          
+  75          
+  76          /****************************************************************************** 
+  77          
+  78          * Function: void DS1302WriteByte( uint8 Address, uint8 Content ) * 
+  79          
+  80          * Description: Write one BYTE 
+  81          
+  82          * Parameter: Address
+  83          
+  84          * Content: Data to write
+  85          
+  86          * Return: * 
+  87          
+  88          ******************************************************************************/ 
+  89          void DS1302WriteByte (uint8 nAddress, uint8 nData)
+  90          { 
+  91   1              DS1302_RST_LOW          //Cancel all data
+  92   1              DS1302_SCLK_LOW         //Set SCLK to low to enable RST
+  93   1              DS1302_RST_HIGH         //Start data transfering 
+  94   1      
+  95   1              DS1302Write (nAddress);
+  96   1              DS1302Write (nData); 
+  97   1      
+  98   1              DS1302_RST_LOW          //Stop data transfering
+  99   1              DS1302_SCLK_HIGH 
+ 100   1      } 
+ 101          
+ 102          /****************************************************************************** 
+ 103          
+ 104          * Function: uint8 DS1302ReadByte (uint8 nAddress)
+ 105          
+ 106          * Description:  Read a BYTE from the address
+ 107          
+ 108          * Parameter: Address
+ 109          
+ 110          * 
+ 111          
+ 112          * Return: Readed value
+ 113          
+ 114          ******************************************************************************/ 
+ 115          
+ 116          uint8 DS1302ReadByte (uint8 nAddress) 
+C51 COMPILER V7.10   DS1302                                                                03/25/2017 09:16:01 PAGE 3   
+
+ 117          
+ 118          { 
+ 119   1              uint8 nReadValue ; 
+ 120   1      
+ 121   1              if (bGate)
+ 122   1                      return 0;
+ 123   1      
+ 124   1              bGate = 1;
+ 125   1      
+ 126   1              DS1302_RST_LOW          //Cancel all data 
+ 127   1              DS1302_SCLK_LOW         //Set SCLK to low to enable RST
+ 128   1              DS1302_RST_HIGH         //Start data transfering 
+ 129   1      
+ 130   1      
+ 131   1              DS1302Write (nAddress);
+ 132   1              nReadValue = DS1302Read ();
+ 133   1      
+ 134   1              DS1302_RST_LOW          //Stop data transfering 
+ 135   1              DS1302_SCLK_HIGH 
+ 136   1      
+ 137   1              bGate = 0;
+ 138   1      
+ 139   1              return nReadValue ; 
+ 140   1      } 
+ 141          
+ 142          /****************************************************************************** 
+ 143          
+ 144          * Function: void ClockInit( void ) * 
+ 145          
+ 146          * Description:  Initialize the Clock if this is the first time power on
+ 147          
+ 148          * Parameter: * 
+ 149          
+ 150          * * 
+ 151          
+ 152          * Return: * 
+ 153          
+ 154          ******************************************************************************/ 
+ 155          
+ 156          void ClockInit (void)
+ 157          {
+ 158   1              if (DS1302ReadByte (DS1302_RAM0_READ) != 0xF0)          //Detect Flag
+ 159   1              { 
+ 160   2                      DS1302WriteByte (DS1302_WP, 0x00);                              //Enable Write 
+ 161   2      
+ 162   2                      DS1302WriteByte (DS1302_SECOND_WRITE, 0x00);
+ 163   2                      DS1302WriteByte (DS1302_MINUTE_WRITE, 0x10);
+ 164   2                      DS1302WriteByte (DS1302_HOUR_WRITE, 0x10);
+ 165   2                      DS1302WriteByte (DS1302_DAY_WRITE, 0x10);
+ 166   2                      DS1302WriteByte (DS1302_MONTH_WRITE, 0x10);
+ 167   2                      DS1302WriteByte (DS1302_WEEK_WRITE, 0x05);
+ 168   2                      DS1302WriteByte (DS1302_YEAR_WRITE, 0x15);
+ 169   2      
+ 170   2                      //DS1302WriteByte( 0x90, 0xa5 ) ; //Charging 
+ 171   2                      DS1302WriteByte( DS1302_RAM0_WRITE, 0xF0 );             //Set Flag
+ 172   2                      DS1302WriteByte( DS1302_RAM1_WRITE, 0 );                //Default My Data
+ 173   2                      DS1302WriteByte( DS1302_RAM2_WRITE, 0 );                //Default My Data
+ 174   2                      DS1302WriteByte( DS1302_RAM3_WRITE, 0 );                //Default My Data
+ 175   2                      DS1302WriteByte( DS1302_WP, 0x80 );                             //Disable Write 
+ 176   2              }
+ 177   1              
+ 178   1              if (DS1302ReadByte (DS1302_SECOND_READ) & 0x80)         //Clock Paused
+C51 COMPILER V7.10   DS1302                                                                03/25/2017 09:16:01 PAGE 4   
+
+ 179   1              {
+ 180   2                      DS1302WriteByte (DS1302_WP, 0x00);                              //Enable Write 
+ 181   2      
+ 182   2                      DS1302WriteByte (DS1302_SECOND_WRITE, DS1302ReadByte (DS1302_SECOND_READ) & 0x7F); //Clear CH bit
+ 183   2      
+ 184   2                      DS1302WriteByte( DS1302_WP, 0x80 );                             //Disable Write 
+ 185   2              }
+ 186   1      } 
+ 187          
+ 188          /****************************************************************************** 
+ 189          
+ 190          * Function: void DS1302ReadTime (DS1302Time *)
+ 191          
+ 192          * Description: Read the time from DS1302 and save to the data 
+ 193          
+ 194          * Parameter: *DS1302Time 
+ 195          
+ 196          * * 
+ 197          
+ 198          * Return: TRUE  - Read OK
+ 199          
+ 200          *         FALSE - Read Error 
+ 201          
+ 202          ******************************************************************************/ 
+ 203          uint8 DS1302ReadTime (DS1302Time *pCurrentTime)
+ 204          {
+ 205   1              //Burst Read
+ 206   1              uint8 nCount;
+ 207   1      
+ 208   1              if (bGate)
+ 209   1                      return 0;
+ 210   1      
+ 211   1              bGate = 1;
+ 212   1      
+ 213   1              DS1302_RST_LOW          //Cancel all data 
+ 214   1              DS1302_SCLK_LOW         //Set SCLK to low to enable RST
+ 215   1              DS1302_RST_HIGH         //Start data transfering 
+ 216   1      
+ 217   1      
+ 218   1              DS1302Write (DS1302_CLOCK_READ);
+ 219   1              for (nCount = 0; nCount < 8; nCount ++)
+ 220   1                      ((uint8 *)pCurrentTime) [nCount] = DS1302Read ();
+ 221   1      
+ 222   1              DS1302_RST_LOW          //Stop data transfering 
+ 223   1              DS1302_SCLK_HIGH 
+ 224   1      
+ 225   1              bGate = 0;
+ 226   1              return 1;
+ 227   1      }
+ 228          
+ 229          
+ 230          /****************************************************************************** 
+ 231          
+ 232          * Function: void DS1302WriteTime (DS1302Time *)
+ 233          
+ 234          * Description: Write the time into DS1302
+ 235          
+ 236          * Parameter: *DS1302Time 
+ 237          
+ 238          * * 
+ 239          
+ 240          * Return: TRUE  - Write OK
+C51 COMPILER V7.10   DS1302                                                                03/25/2017 09:16:01 PAGE 5   
+
+ 241          
+ 242          *         FALSE - Write Error 
+ 243          
+ 244          ******************************************************************************/ 
+ 245          unsigned char DS1302WriteTime (DS1302Time *pCurrentTime)
+ 246          {
+ 247   1              //Burst Write
+ 248   1              uint8 nCount;
+ 249   1      
+ 250   1              if (bGate)
+ 251   1                      return 0;
+ 252   1      
+ 253   1              bGate = 1;
+ 254   1      
+ 255   1              DS1302WriteByte (DS1302_WP, 0x00); //Enable Write
+ 256   1      
+ 257   1              DS1302_RST_LOW          //Cancel all data 
+ 258   1              DS1302_SCLK_LOW         //Set SCLK to low to enable RST
+ 259   1              DS1302_RST_HIGH         //Start data transfering 
+ 260   1      
+ 261   1              DS1302Write (DS1302_CLOCK_WRITE);
+ 262   1              for (nCount = 0; nCount < 8; nCount ++)
+ 263   1                      DS1302Write (((uint8 *)pCurrentTime) [nCount]);
+ 264   1      
+ 265   1              DS1302WriteByte (DS1302_WP, 0x80); //Disable Write
+ 266   1      
+ 267   1              bGate = 0;
+ 268   1              return 1;
+ 269   1      }
+ 270          
+ 271          
+ 272          /****************************************************************************** 
+ 273          
+ 274          * Function: void DS1302WriteMyData (unsigned char, unsigned char)
+ 275          
+ 276          * Description: Write my data
+ 277          
+ 278          * Parameter: My data
+ 279          
+ 280          * * 
+ 281          
+ 282          * Return:
+ 283          
+ 284          ******************************************************************************/ 
+ 285          void DS1302WriteMyData (unsigned char nRAM, unsigned char nData)
+ 286          {
+ 287   1              if (bGate)
+ 288   1                      return;
+ 289   1      
+ 290   1              bGate = 1;
+ 291   1      
+ 292   1              DS1302WriteByte (DS1302_WP, 0x00); //Enable Write 
+ 293   1              DS1302WriteByte (DS1302_RAM0_WRITE + (nRAM << 1), nData) ; //My Data
+ 294   1              DS1302WriteByte (DS1302_WP, 0x80 ); //Disable Write
+ 295   1      
+ 296   1              bGate = 0;
+ 297   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    344    ----
+   CONSTANT SIZE    =   ----    ----
+C51 COMPILER V7.10   DS1302                                                                03/25/2017 09:16:01 PAGE 6   
+
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       6
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

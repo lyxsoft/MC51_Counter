@@ -1,0 +1,275 @@
+C51 COMPILER V7.10   NTC                                                                   01/07/2017 23:04:32 PAGE 1   
+
+
+C51 COMPILER V7.10, COMPILATION OF MODULE NTC
+OBJECT MODULE PLACED IN ..\Output\NTC.obj
+COMPILER INVOKED BY: C:\Users\lyxso\System\Tools\Keil\C51\BIN\C51.EXE NTC.c ROM(COMPACT) INCDIR(C:\Users\lyxso\System\To
+                    -ols\Keil\C51\INC\) OBJECT(..\Output\NTC.obj)
+
+line level    source
+
+   1          /*
+   2          
+   3                  (*) Read NTC temperature
+   4          
+   5          
+   6                          Connection:
+   7                          Vcc---R(4.7K)---NTC(10K)---GND
+   8                                        |
+   9                                      ADC P1.6
+  10          
+  11          */
+  12          
+  13          #include "STC\STC15F104E.H"
+  14          #include <INTRINS.H>
+  15          #include "NTC.h"
+  16          
+  17          sbit PIN_NTC = P1 ^6;           //P1.6
+  18          #define P1ASF_NTC 0x40      //P1.6
+  19          #define NUM_NTC 0x6                     //P1.6
+  20          
+  21          #define ADC_POWER   0x80    //ADC电源控制位
+  22          #define ADC_SPEED3  0x60    //ADC转换速度，一次转换需要 90个时钟
+  23          #define ADC_SPEED2  0x40    //ADC转换速度，一次转换需要180个时钟
+  24          #define ADC_SPEED1  0x20    //ADC转换速度，一次转换需要360个时钟
+  25          #define ADC_SPEED0  0x00    //ADC转换速度，一次转换需要540个时钟
+  26          #define ADC_FLAG    0x10    //ADC完成标志位
+  27          #define ADC_START   0x08    //ADC启动控制位
+  28          
+  29          
+  30          static bit bGate = 0;
+  31          
+  32          /*
+  33                  NTC Value & Temp
+  34          */
+  35          #define ADC_81          253             //ADC = 253 at 81 deg
+  36          #define TABLE_COUNT 120         //-40 to 80 deg, had 120 numbers
+  37          unsigned char code nTempTable[] = {
+  38                  1,      // -40
+  39                  1,      // -39
+  40                  1,      // -38
+  41                  2,      // -37
+  42                  1,      // -36
+  43                  2,      // -35
+  44                  2,      // -34
+  45                  1,      // -33
+  46                  2,      // -32
+  47                  2,      // -31
+  48                  2,      // -30
+  49                  2,      // -29
+  50                  3,      // -28
+  51                  2,      // -27
+  52                  2,      // -26
+  53                  3,      // -25
+  54                  2,      // -24
+C51 COMPILER V7.10   NTC                                                                   01/07/2017 23:04:32 PAGE 2   
+
+  55                  3,      // -23
+  56                  3,      // -22
+  57                  2,      // -21
+  58                  3,      // -20
+  59                  3,      // -19
+  60                  4,      // -18
+  61                  3,      // -17
+  62                  3,      // -16
+  63                  4,      // -15
+  64                  3,      // -14
+  65                  4,      // -13
+  66                  4,      // -12
+  67                  4,      // -11
+  68                  4,      // -10
+  69                  5,      // -9
+  70                  4,      // -8
+  71                  5,      // -7
+  72                  5,      // -6
+  73                  5,      // -5
+  74                  5,      // -4
+  75                  5,      // -3
+  76                  5,      // -2
+  77                  6,      // -1
+  78                  5,      // 0
+  79                  6,      // 1
+  80                  6,      // 2
+  81                  5,      // 3
+  82                  6,      // 4
+  83                  6,      // 5
+  84                  7,      // 6
+  85                  6,      // 7
+  86                  6,      // 8
+  87                  6,      // 9
+  88                  1,      // 10
+  89                  3,      // 11
+  90                  5,      // 12
+  91                  6,      // 13
+  92                  8,      // 14
+  93                  8,      // 15
+  94                  9,      // 16
+  95                  10,     // 17
+  96                  10,     // 18
+  97                  10,     // 19
+  98                  11,     // 20
+  99                  10,     // 21
+ 100                  10,     // 22
+ 101                  10,     // 23
+ 102                  10,     // 24
+ 103                  10,     // 25
+ 104                  9,      // 26
+ 105                  10,     // 27
+ 106                  9,      // 28
+ 107                  9,      // 29
+ 108                  9,      // 30
+ 109                  8,      // 31
+ 110                  9,      // 32
+ 111                  9,      // 33
+ 112                  9,      // 34
+ 113                  8,      // 35
+ 114                  9,      // 36
+ 115                  8,      // 37
+ 116                  9,      // 38
+C51 COMPILER V7.10   NTC                                                                   01/07/2017 23:04:32 PAGE 3   
+
+ 117                  9,      // 39
+ 118                  8,      // 40
+ 119                  9,      // 41
+ 120                  9,      // 42
+ 121                  9,      // 43
+ 122                  9,      // 44
+ 123                  8,      // 45
+ 124                  9,      // 46
+ 125                  9,      // 47
+ 126                  9,      // 48
+ 127                  9,      // 49
+ 128                  8,      // 50
+ 129                  9,      // 51
+ 130                  9,      // 52
+ 131                  9,      // 53
+ 132                  9,      // 54
+ 133                  9,      // 55
+ 134                  9,      // 56
+ 135                  9,      // 57
+ 136                  9,      // 58
+ 137                  8,      // 59
+ 138                  6,      // 60
+ 139                  5,      // 61
+ 140                  6,      // 62
+ 141                  6,      // 63
+ 142                  7,      // 64
+ 143                  7,      // 65
+ 144                  8,      // 66
+ 145                  7,      // 67
+ 146                  7,      // 68
+ 147                  8,      // 69
+ 148                  7,      // 70
+ 149                  7,      // 71
+ 150                  7,      // 72
+ 151                  6,      // 73
+ 152                  6,      // 74
+ 153                  6,      // 75
+ 154                  6,      // 76
+ 155                  6,      // 77
+ 156                  5,      // 78
+ 157                  5,      // 79
+ 158                  5       // 80
+ 159          };
+ 160          
+ 161          
+ 162          static bit bInited;
+ 163          
+ 164          /*
+ 165                  Init the ADC
+ 166          */
+ 167          void InitADC(void)
+ 168          {
+ 169   1          P1ASF = P1ASF_NTC;  //Open the ADC of the pin
+ 170   1          PIN_NTC = 0;        //Set to low to measure the pin
+ 171   1          ADC_RES = 0;        //Clear the result
+ 172   1              ADC_RESL = 0;
+ 173   1          ADC_CONTR = ADC_POWER | ADC_SPEED3 | NUM_NTC; //Power on, speed 3, pin #6
+ 174   1      
+ 175   1              bInited = 1;
+ 176   1      }
+ 177          
+ 178          /*
+C51 COMPILER V7.10   NTC                                                                   01/07/2017 23:04:32 PAGE 4   
+
+ 179                  Read the ADC value
+ 180          
+ 181                  Return High 8bit only
+ 182          */
+ 183          unsigned int GetADCResult (void)
+ 184          //unsigned char Get_ADC_Result(void)
+ 185          {
+ 186   1          ADC_RES = 0;        //Clear the result
+ 187   1              ADC_RESL = 0;
+ 188   1      
+ 189   1              if (!bInited)
+ 190   1                      InitADC ();
+ 191   1      
+ 192   1          ADC_CONTR =ADC_POWER|ADC_SPEED3|NUM_NTC|ADC_START;//Power on, speed 3, pin #6, Start ADC
+ 193   1      
+ 194   1              //Wait for a while to start
+ 195   1          _nop_();    _nop_();
+ 196   1          _nop_();    _nop_();
+ 197   1      
+ 198   1          while (!(ADC_CONTR & ADC_FLAG));    //Waiting for ADC finished
+ 199   1          
+ 200   1              ADC_CONTR &= ~ADC_FLAG;                         //Clear the flag
+ 201   1          
+ 202   1              return (((unsigned int)ADC_RES << 2) | ADC_RESL);
+ 203   1              //return ADC_RES;
+ 204   1      }
+ 205          
+ 206          /*
+ 207                  Read the temperature
+ 208          
+ 209                  Return temperature in deg, start from -40 deg. Max is 81 deg.
+ 210                  for example: return 0 means -40deg, 40 means 0 deg, 61 means 21 deg.
+ 211                  nLow return the 0.1deg
+ 212          */
+ 213          unsigned char ReadTemperature (unsigned char *nLow)
+ 214          {
+ 215   1              unsigned int nADC;
+ 216   1              unsigned char nStep;
+ 217   1              unsigned char nCount;
+ 218   1      
+ 219   1              nADC = GetADCResult ();
+ 220   1              nStep = ADC_81;         //Start from 81 deg
+ 221   1              nCount = TABLE_COUNT + 1;
+ 222   1      
+ 223   1              while (nADC >= nStep && nCount)
+ 224   1              {
+ 225   2                      nADC -= nStep;
+ 226   2                      nCount --;
+ 227   2                      nStep = nTempTable [nCount];
+ 228   2              }
+ 229   1              
+ 230   1              *nLow = 0;
+ 231   1              if (nADC == 0)
+ 232   1                      return (nCount);        
+ 233   1              if (nCount == 0)
+ 234   1                      return (0);
+ 235   1      
+ 236   1              *nLow = 10 - nADC * 10 / nStep;
+ 237   1              if (*nLow >= 10)
+ 238   1              {
+ 239   2                      *nLow = 0;
+ 240   2                      return (nCount);
+C51 COMPILER V7.10   NTC                                                                   01/07/2017 23:04:32 PAGE 5   
+
+ 241   2              }
+ 242   1              return (nCount - 1); 
+ 243   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    180    ----
+   CONSTANT SIZE    =    121    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       5
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
